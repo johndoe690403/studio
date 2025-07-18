@@ -2,9 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Archive,
   Calendar,
   Download,
   Library,
+  ListMusic,
   Loader2,
   Music,
   RotateCw,
@@ -44,6 +46,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import type { HarvesterResult } from '@/lib/types';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const formSchema = z
   .object({
@@ -60,19 +63,23 @@ type AppStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const progressStages = [
   { percent: 10, text: 'Warming up the tubes... AI is initializing.' },
-  { percent: 20, text: 'AI is prioritizing the best sources...' },
+  { percent: 20, text: 'AI is formulating the best search strategy...' },
   { percent: 30, text: 'Searching for tracks on YouTube...' },
   { percent: 50, text: 'Converting videos to audio...' },
   { percent: 70, text: 'Processing audio files...' },
   { percent: 80, text: 'Sorting tracks by popularity...' },
-  { percent: 95, text: 'Packaging your retro riffs...' },
+  { percent: 95, text: 'Calculating total file size...' },
 ];
+
+// 10 MB in bytes
+const ZIP_THRESHOLD_BYTES = 10 * 1024 * 1024;
 
 export default function Harvester() {
   const [status, setStatus] = useState<AppStatus>('idle');
   const [results, setResults] = useState<HarvesterResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [progressText, setProgressText] = useState('');
+  const [totalSize, setTotalSize] = useState(0);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
@@ -110,6 +117,15 @@ export default function Harvester() {
       try {
         const result = await processQuery(values);
         setResults(result);
+
+        const calculatedSize = result.songs.reduce(
+          (acc, song) => acc + (song.fileContent?.length || 0),
+          0
+        );
+        // This is an approximation. Base64 is larger than binary.
+        const estimatedBinarySize = calculatedSize * 0.75;
+        setTotalSize(estimatedBinarySize);
+
         setStatus('success');
         setProgress(100);
         setProgressText('Your riffs are ready!');
@@ -131,15 +147,22 @@ export default function Harvester() {
 
     const zip = new JSZip();
     results.songs.forEach((song) => {
-      const fileName = `${song.artist} - ${song.title}.mp3`.replace(
-        /[\\/?%*:|"<>]/g,
-        '-'
-      );
-      // Add the base64 encoded audio file to the zip
-      zip.file(fileName, song.fileContent, { base64: true });
+      if (song.fileContent) {
+        const fileName = `${song.artist} - ${song.title}.mp3`.replace(
+          /[\\/?%*:|"<>]/g,
+          '-'
+        );
+        zip.file(fileName, song.fileContent, { base64: true });
+      }
     });
 
-    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: {
+        level: 9,
+      },
+    });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(zipBlob);
     link.download = `RetroRiff-Harvester-${Date.now()}.zip`;
@@ -155,9 +178,12 @@ export default function Harvester() {
     form.reset();
     setProgress(0);
     setProgressText('');
+    setTotalSize(0);
   };
 
   const isLoading = status === 'loading';
+  const showDownload = status === 'success' && totalSize > ZIP_THRESHOLD_BYTES;
+  const showListOnly = status === 'success' && totalSize <= ZIP_THRESHOLD_BYTES;
 
   return (
     <Card className="w-full max-w-3xl shadow-2xl">
@@ -171,7 +197,7 @@ export default function Harvester() {
               RetroRiff Harvester
             </CardTitle>
             <CardDescription>
-              Enter artists, genres, or years to get a curated .zip of popular
+              Enter artists, genres, or years to get a curated list of popular
               tracks.
             </CardDescription>
           </div>
@@ -311,15 +337,29 @@ export default function Harvester() {
               </Table>
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row">
+            {showDownload && (
               <Button
                 size="lg"
                 className="w-full animate-pulse bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={handleDownload}
               >
                 <Download className="mr-2 h-5 w-5" />
-                Download .zip
+                Download .zip ({(totalSize / 1024 / 1024).toFixed(2)} MB)
               </Button>
+            )}
+
+            {showListOnly && (
+              <Alert>
+                <ListMusic className="h-4 w-4" />
+                <AlertTitle>Riffs Harvested</AlertTitle>
+                <AlertDescription>
+                  Total size is less than 10MB. A zip file is not available.
+                  Enjoy the curated list!
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="flex justify-center">
               <Button
                 size="lg"
                 variant="outline"

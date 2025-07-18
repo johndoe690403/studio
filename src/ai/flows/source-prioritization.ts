@@ -1,6 +1,6 @@
 // 'use server';
 /**
- * @fileOverview An AI agent that prioritizes the best sources for music files based on user input.
+ * @fileOverview An AI agent that creates an optimal search query for finding music.
  *
  * - prioritizeSources - A function that handles the source prioritization process.
  * - PrioritizeSourcesInput - The input type for the prioritizeSources function.
@@ -20,8 +20,8 @@ const PrioritizeSourcesInputSchema = z.object({
 export type PrioritizeSourcesInput = z.infer<typeof PrioritizeSourcesInputSchema>;
 
 const PrioritizeSourcesOutputSchema = z.object({
-  searchQuery: z.string().describe('The best search query to use for finding music files.'),
-  source: z.string().describe('The prioritized music source to use for finding music files.'),
+  searchQuery: z.string().describe('The best search query to use for finding music files on a search engine like Google.'),
+  source: z.string().describe('The best online platform or type of site to search within (e.g., YouTube, SoundCloud, Bandcamp).'),
 });
 export type PrioritizeSourcesOutput = z.infer<typeof PrioritizeSourcesOutputSchema>;
 
@@ -33,21 +33,16 @@ const prompt = ai.definePrompt({
   name: 'prioritizeSourcesPrompt',
   input: {schema: PrioritizeSourcesInputSchema},
   output: {schema: PrioritizeSourcesOutputSchema},
-  prompt: `You are an AI expert in identifying the best sources for music files.
+  prompt: `You are an AI expert in finding music online. Your goal is to construct the best possible search query for a search engine to find downloadable, high-quality songs based on user input.
 
-  Given the following user input, determine the best search query and music source to use to maximize the chances of finding high-quality and readily downloadable songs.
+  User Input:
+  - Artist(s): {{{artists}}}
+  - Genre: {{{genre}}}
+  - Year(s): {{{year}}}
 
-  Artist(s): {{{artists}}}
-  Genre: {{{genre}}}
-  Year(s): {{{year}}}
+  Based on the input, determine the most effective search query and the best platform (like YouTube, SoundCloud, etc.) to find the music. The search query should be optimized for finding lists of popular songs or full albums.
 
-  Consider factors such as the availability of music files, the quality of the files, and the ease of downloading the files.
-
-  Return the search query and source in the following JSON format:
-  {
-    "searchQuery": "<the best search query to use>",
-    "source": "<the prioritized music source to use>"
-  }`,
+  Return the result in JSON format.`,
 });
 
 const prioritizeSourcesFlow = ai.defineFlow(
