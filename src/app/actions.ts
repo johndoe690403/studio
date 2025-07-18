@@ -54,8 +54,6 @@ export async function processQuery(
       artist: artist,
     };
     const { audioContentB64 } = await findAndConvertSong(songInput);
-    // Simulate processing delay for each song
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     return {
       ...songMeta,
       artist: artist,
@@ -63,9 +61,9 @@ export async function processQuery(
     };
   });
 
-  const songs = (await Promise.all(songPromises)).sort(
-    (a, b) => b.popularity - a.popularity
-  );
+  const songs = (await Promise.all(songPromises))
+    .filter((song) => song.fileContent) // Filter out songs that failed to download
+    .sort((a, b) => b.popularity - a.popularity);
 
   return {
     aiResult,

@@ -9,6 +9,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import ytdl from 'ytdl-core';
+import YouTube from 'youtube-sr';
 
 const FindAndConvertSongInputSchema = z.object({
   title: z.string().describe('The title of the song.'),
@@ -33,54 +35,14 @@ export async function findAndConvertSong(
   return findAndConvertSongFlow(input);
 }
 
-// Mocked tool to simulate searching YouTube
-const searchYouTubeTool = ai.defineTool(
-  {
-    name: 'searchYouTube',
-    description: 'Searches YouTube for a music video and returns its ID.',
-    inputSchema: z.object({
-      query: z
-        .string()
-        .describe('The search query, e.g., "Artist - Title".'),
-    }),
-    outputSchema: z.object({
-      videoId: z.string().describe('The YouTube video ID.'),
-    }),
-  },
-  async (input) => {
-    console.log(`Searching YouTube for: ${input.query}`);
-    // In a real implementation, you would use the YouTube API here.
-    // We'll return a deterministic mock ID based on the query.
-    const mockId = Buffer.from(input.query).toString('hex').slice(0, 11);
-    return { videoId: mockId };
-  }
-);
-
-// Mocked tool to simulate converting a video to audio
-const convertToAudioTool = ai.defineTool(
-  {
-    name: 'convertToAudio',
-    description: 'Converts a YouTube video to an audio file (mock).',
-    inputSchema: z.object({
-      videoId: z.string().describe('The YouTube video ID to convert.'),
-      title: z.string().describe('The title of the song.'),
-      artist: z.string().describe('The artist of the song.'),
-    }),
-    outputSchema: z.object({
-      audioContentB64: z
-        .string()
-        .describe('The base64 encoded content of the audio file.'),
-    }),
-  },
-  async (input) => {
-    console.log(`Converting video ID ${input.videoId} to audio.`);
-    // In a real implementation, this would download the video and convert it.
-    // We'll return mock base64 audio data.
-    const textContent = `This is a mock audio file for "${input.title}" by ${input.artist}. (Video ID: ${input.videoId})`;
-    const b64Content = Buffer.from(textContent).toString('base64');
-    return { audioContentB64: b64Content };
-  }
-);
+async function streamToBuffer(stream: NodeJS.ReadableStream): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
+  });
+}
 
 const findAndConvertSongFlow = ai.defineFlow(
   {
@@ -90,15 +52,34 @@ const findAndConvertSongFlow = ai.defineFlow(
   },
   async (input) => {
     const searchQuery = `${input.artist} - ${input.title}`;
+    console.log(`Searching YouTube for: ${searchQuery}`);
 
-    const searchResult = await searchYouTubeTool({ query: searchQuery });
+    try {
+      const video = await YouTube.searchOne(searchQuery, 'video');
+      if (!video) {
+        throw new Error(`No video found for query: ${searchQuery}`);
+      }
 
-    const audioResult = await convertToAudioTool({
-      videoId: searchResult.videoId,
-      title: input.title,
-      artist: input.artist,
-    });
+      console.log(`Found video: ${video.title} (${video.url})`);
 
-    return audioResult;
+      const audioStream = ytdl(video.url, {
+        filter: 'audioonly',
+        quality: 'highestaudio',
+      });
+
+      console.log(`Downloading and converting audio for ${video.title}...`);
+      const audioBuffer = await streamToBuffer(audioStream);
+      const audioContentB64 = audioBuffer.toString('base64');
+
+      console.log(`Successfully converted audio for ${video.title}.`);
+      return { audioContentB64 };
+    } catch (error) {
+      console.error(
+        `Failed to process song "${searchQuery}":`,
+        error instanceof Error ? error.message : String(error)
+      );
+      // Return empty content if there's an error to avoid breaking the whole process
+      return { audioContentB64: '' };
+    }
   }
 );
