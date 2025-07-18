@@ -59,9 +59,11 @@ const formSchema = z
 type AppStatus = 'idle' | 'loading' | 'success' | 'error';
 
 const progressStages = [
-  { percent: 20, text: 'Warming up the tubes... AI is initializing.' },
-  { percent: 40, text: 'AI is prioritizing the best sources...' },
-  { percent: 60, text: 'Sourcing files from the digital ether...' },
+  { percent: 10, text: 'Warming up the tubes... AI is initializing.' },
+  { percent: 20, text: 'AI is prioritizing the best sources...' },
+  { percent: 30, text: 'Searching for tracks on YouTube...' },
+  { percent: 50, text: 'Converting videos to audio...' },
+  { percent: 70, text: 'Processing audio files...' },
   { percent: 80, text: 'Sorting tracks by popularity...' },
   { percent: 95, text: 'Packaging your retro riffs...' },
 ];
@@ -129,8 +131,12 @@ export default function Harvester() {
 
     const zip = new JSZip();
     results.songs.forEach((song) => {
-      const fileName = `${song.artist} - ${song.title}.txt`.replace(/[\\/?%*:|"<>]/g, '-');
-      zip.file(fileName, song.fileContent);
+      const fileName = `${song.artist} - ${song.title}.mp3`.replace(
+        /[\\/?%*:|"<>]/g,
+        '-'
+      );
+      // Add the base64 encoded audio file to the zip
+      zip.file(fileName, song.fileContent, { base64: true });
     });
 
     const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -231,7 +237,9 @@ export default function Harvester() {
                   )}
                 />
               </div>
-              <FormMessage>{form.formState.errors.artists?.message}</FormMessage>
+              <FormMessage>
+                {form.formState.errors.artists?.message}
+              </FormMessage>
               <Button
                 type="submit"
                 className="w-full"
@@ -284,12 +292,17 @@ export default function Harvester() {
                 <TableBody>
                   {results.songs.map((song) => (
                     <TableRow key={song.id}>
-                      <TableCell className="font-medium">{song.title}</TableCell>
+                      <TableCell className="font-medium">
+                        {song.title}
+                      </TableCell>
                       <TableCell>{song.artist}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                           <span className="w-8">{song.popularity}%</span>
-                           <Progress value={song.popularity} className="h-2 w-24" />
+                          <span className="w-8">{song.popularity}%</span>
+                          <Progress
+                            value={song.popularity}
+                            className="h-2 w-24"
+                          />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -297,7 +310,7 @@ export default function Harvester() {
                 </TableBody>
               </Table>
             </div>
-            
+
             <div className="flex flex-col gap-4 sm:flex-row">
               <Button
                 size="lg"
@@ -307,7 +320,7 @@ export default function Harvester() {
                 <Download className="mr-2 h-5 w-5" />
                 Download .zip
               </Button>
-               <Button
+              <Button
                 size="lg"
                 variant="outline"
                 onClick={reset}
