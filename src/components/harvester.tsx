@@ -83,6 +83,9 @@ export default function Harvester() {
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  const currentYear = new Date().getFullYear();
+  const yearPlaceholder = `${currentYear - 10}-${currentYear}`;
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -218,7 +221,7 @@ export default function Harvester() {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., The Beatles, Queen"
+                          placeholder="e.g., Kendrick Lamar"
                           {...field}
                           disabled={isLoading}
                         />
@@ -236,7 +239,7 @@ export default function Harvester() {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., Rock, 80s Pop"
+                          placeholder="e.g., Hip Hop"
                           {...field}
                           disabled={isLoading}
                         />
@@ -254,7 +257,7 @@ export default function Harvester() {
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="e.g., 1985, 1990-2000"
+                          placeholder={`e.g., ${yearPlaceholder}`}
                           {...field}
                           disabled={isLoading}
                         />
