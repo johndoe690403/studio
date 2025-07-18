@@ -5,6 +5,7 @@ export type Song = {
   title: string;
   artist: string;
   popularity: number;
+  fileContent: string;
 };
 
 export type HarvesterResult = {

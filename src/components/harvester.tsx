@@ -12,6 +12,7 @@ import {
 import React, { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import JSZip from 'jszip';
 
 import { processQuery } from '@/app/actions';
 import { Button } from '@/components/ui/button';
@@ -122,6 +123,25 @@ export default function Harvester() {
       }
     });
   }
+
+  const handleDownload = async () => {
+    if (!results) return;
+
+    const zip = new JSZip();
+    results.songs.forEach((song) => {
+      const fileName = `${song.artist} - ${song.title}.txt`.replace(/[\\/?%*:|"<>]/g, '-');
+      zip.file(fileName, song.fileContent);
+    });
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(zipBlob);
+    link.download = `RetroRiff-Harvester-${Date.now()}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  };
 
   const reset = () => {
     setStatus('idle');
@@ -282,6 +302,7 @@ export default function Harvester() {
               <Button
                 size="lg"
                 className="w-full animate-pulse bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={handleDownload}
               >
                 <Download className="mr-2 h-5 w-5" />
                 Download .zip
@@ -299,12 +320,6 @@ export default function Harvester() {
           </div>
         )}
       </CardContent>
-      <CardFooter>
-        <p className="text-xs text-muted-foreground">
-          This is a demo application. The download feature is simulated. No
-          files are actually downloaded or distributed.
-        </p>
-      </CardFooter>
     </Card>
   );
 }

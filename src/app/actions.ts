@@ -14,14 +14,62 @@ const formSchema = z.object({
 });
 
 const DUMMY_SONGS: Song[] = [
-    { id: 1, title: 'Bohemian Rhapsody', artist: 'Queen', popularity: 95 },
-    { id: 2, title: 'Like a Rolling Stone', artist: 'Bob Dylan', popularity: 92 },
-    { id: 3, title: 'Stairway to Heaven', artist: 'Led Zeppelin', popularity: 98 },
-    { id: 4, title: 'Smells Like Teen Spirit', artist: 'Nirvana', popularity: 90 },
-    { id: 5, title: 'Hotel California', artist: 'Eagles', popularity: 88 },
-    { id: 6, title: 'Sweet Child O\' Mine', artist: 'Guns N\' Roses', popularity: 85 },
-    { id: 7, title: 'Imagine', artist: 'John Lennon', popularity: 89 },
-    { id: 8, title: 'Billie Jean', artist: 'Michael Jackson', popularity: 93 },
+  {
+    id: 1,
+    title: 'Bohemian Rhapsody',
+    artist: 'Queen',
+    popularity: 95,
+    fileContent: 'This is a dummy file for Bohemian Rhapsody.',
+  },
+  {
+    id: 2,
+    title: 'Like a Rolling Stone',
+    artist: 'Bob Dylan',
+    popularity: 92,
+    fileContent: 'This is a dummy file for Like a Rolling Stone.',
+  },
+  {
+    id: 3,
+    title: 'Stairway to Heaven',
+    artist: 'Led Zeppelin',
+    popularity: 98,
+    fileContent: 'This is a dummy file for Stairway to Heaven.',
+  },
+  {
+    id: 4,
+    title: 'Smells Like Teen Spirit',
+    artist: 'Nirvana',
+    popularity: 90,
+    fileContent: 'This is a dummy file for Smells Like Teen Spirit.',
+  },
+  {
+    id: 5,
+    title: 'Hotel California',
+    artist: 'Eagles',
+    popularity: 88,
+    fileContent: 'This is a dummy file for Hotel California.',
+  },
+  {
+    id: 6,
+    title: "Sweet Child O' Mine",
+    artist: "Guns N' Roses",
+    popularity: 85,
+    fileContent: "This is a dummy file for Sweet Child O' Mine.",
+  },
+  {
+    id: 7,
+    title: 'Imagine',
+    artist: 'John Lennon',
+    popularity: 89,
+    fileContent: 'This is a dummy file for Imagine.',
+  },
+  {
+    id: 8,
+    title: 'Billie Jean',
+    artist: 'Michael Jackson',
+    popularity: 93,
+    fileContent: 'This is a dummy file for Billie Jean.',
+  },
 ];
 
 export async function processQuery(
